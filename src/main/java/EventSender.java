@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
         Author = "Thauan"
 )
 
-public class EventSender extends ExtensionForm implements Initializable {
+public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
     public ListView<String> listFriends;
     public boolean friendsLoaded = false;
@@ -35,16 +35,9 @@ public class EventSender extends ExtensionForm implements Initializable {
     public ListView<String> groupListNames;
     public Label labelInfo;
     public Button buttonCleanList;
-    public ListView<String> listBanged;
     public Button buttonSendMessage;
     public TextArea textAreaMessage;
-
     Timer timerCooldown = new Timer(40000, e -> enableButtonSendMessage());
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-
-    }
     @Override
     protected void onStartConnection() {
         System.out.println("Event Sender Started it's connection!");
