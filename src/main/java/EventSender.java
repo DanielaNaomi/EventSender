@@ -11,6 +11,7 @@ import javafx.application.Platform;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.paint.Color;
 
 import javax.swing.Timer;
 import java.net.URL;
@@ -46,12 +47,18 @@ public class EventSender extends ExtensionForm {
     @Override
     protected void onShow() {
         timerCooldown.setRepeats(false);
-        sendToServer(new HPacket("MessengerInit", HMessage.Direction.TOSERVER));
     }
 
     @Override
     protected void initExtension() {
         RUNNING_INSTANCE = this;
+
+        onConnect((host, port, hotelVersion, clientIdentifier, clientType) -> {
+            if(!friendsLoaded) {
+                labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled");
+                labelInfo.setTextFill(Color.RED);
+            }
+        });
 
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", hMessage -> {
             idList.clear();
@@ -92,26 +99,28 @@ public class EventSender extends ExtensionForm {
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", hMessage -> {
             HPacket hPacket = hMessage.getPacket();
 
-            for (HFriend user : HFriend.parseFromUpdate(hPacket)) {
-                int userId = user.getId();
-                String userName = user.getName();
+            if(!friendsLoaded) {
+                for (HFriend user : HFriend.parseFromUpdate(hPacket)) {
+                    int userId = user.getId();
+                    String userName = user.getName();
 
-                if(user.isOnline()) {
-                    if(!idList.containsKey(userName) && !listFriends.getItems().contains(userName)) {
-                        idList.put(user.getName(), userId);
-                    }
-                }else {
-                    if(idList.containsKey(userName) || groupIdList.containsKey(userName)) {
-                        idList.remove(userName);
-                        groupIdList.remove(userName);
-                        listFriends.getItems().remove(userName);
-                        groupListNames.getItems().remove(userName);
+                    if (user.isOnline()) {
+                        if (!idList.containsKey(userName) && !listFriends.getItems().contains(userName)) {
+                            idList.put(user.getName(), userId);
+                        }
+                    } else {
+                        if (idList.containsKey(userName) || groupIdList.containsKey(userName)) {
+                            idList.remove(userName);
+                            groupIdList.remove(userName);
+                            listFriends.getItems().remove(userName);
+                            groupListNames.getItems().remove(userName);
+                        }
                     }
                 }
-            }
-            for (Map.Entry<String, Integer> idUsername : idList.entrySet()) {
-                if(!listFriends.getItems().contains(idUsername.getKey()) && !groupListNames.getItems().contains(idUsername.getKey())) {
-                    Platform.runLater(() -> listFriends.getItems().add(idUsername.getKey()));
+                for (Map.Entry<String, Integer> idUsername : idList.entrySet()) {
+                    if (!listFriends.getItems().contains(idUsername.getKey()) && !groupListNames.getItems().contains(idUsername.getKey())) {
+                        Platform.runLater(() -> listFriends.getItems().add(idUsername.getKey()));
+                    }
                 }
             }
 
@@ -119,6 +128,7 @@ public class EventSender extends ExtensionForm {
 
     }
     public void handleButtonSendMessage() {
+        if(!friendsLoaded) return;
         buttonSendMessage.setDisable(true);
         buttonSendMessage.setText("Sending...");
         String[] messages = textAreaMessage.getText().split("\n");
