@@ -55,7 +55,7 @@ public class EventSender extends ExtensionForm {
 
         onConnect((host, port, hotelVersion, clientIdentifier, clientType) -> {
             if(!friendsLoaded) {
-                labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled");
+                labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled now.");
                 labelInfo.setTextFill(Color.RED);
             }
         });
