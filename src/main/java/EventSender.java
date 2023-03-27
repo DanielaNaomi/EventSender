@@ -16,6 +16,7 @@ import javax.swing.Timer;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @ExtensionInfo(
         Title = "Event Sender",
@@ -129,13 +130,14 @@ public class EventSender extends ExtensionForm implements Initializable {
         buttonSendMessage.setText("Sending...");
         String[] messages = textAreaMessage.getText().split("\n");
 
-        int msgIndex = 1;
+        AtomicInteger msgIndex = new AtomicInteger(1);
         AtomicBoolean stop = new AtomicBoolean(false);
         Arrays.stream(messages).forEach(msg -> {
             if(msg.chars().count() > 128) {
                 Platform.runLater(() -> labelInfo.setText("The line " + msgIndex + " of the message is to big, the maximum chars allowed are 128."));
                 stop.set(true);
             }
+            msgIndex.getAndIncrement();
         });
         if(stop.get())
             return;
