@@ -7,7 +7,7 @@ EventSender is a extension to send a message, or multiple messages, to friends!
 
 # Known Issues
 - Doesn't show the message in the messenger
-- You need to restart habbo so it works
+- You need to restart habbo with extension installed so it works properly
 
 # How to use
 1. Select each friend you want to send a message, click the "->" button to drag it over to group list
