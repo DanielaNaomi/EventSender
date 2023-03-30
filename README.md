@@ -15,3 +15,4 @@ EventSender is a extension to send a message, or multiple messages, to friends!
 3. Press Send Message!
 4. Wait for Cooldown, so you can send again.
 
+You can remove the friend by choosing it and clicking the "<-" button
