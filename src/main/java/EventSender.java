@@ -178,7 +178,7 @@ public class EventSender extends ExtensionForm {
                     });
 
             Platform.runLater(() -> {
-                labelInfo.setText("Messages Sent! wait the cooldown.");
+                labelInfo.setText("Messages were Sent! Wait the cooldown.");
                 labelInfo.setTextFill(Color.GREEN);
                 buttonSendMessage.setText("Cooldown...");
             });
