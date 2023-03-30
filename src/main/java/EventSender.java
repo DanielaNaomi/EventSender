@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @ExtensionInfo(
         Title = "Event Sender",
-        Description = "Send custom message to selected friends!",
+        Description = "Send messages to selected friends!",
         Version = "1.2",
         Author = "Thauan"
 )
@@ -33,7 +33,7 @@ public class EventSender extends ExtensionForm {
     public Button buttonMoveToList;
     public ListView<String> groupListNames;
     public Label labelInfo;
-    public Button buttonCleanList;
+    public Button buttonRemoveFromList;
     public Button buttonSendMessage;
     public TextArea textAreaMessage;
     Timer timerCooldown = new Timer(40000, e -> enableButtonSendMessage());
@@ -45,25 +45,28 @@ public class EventSender extends ExtensionForm {
     @Override
     protected void onShow() {
         timerCooldown.setRepeats(false);
-        if(friendsLoaded) {
-            labelInfo.setText("Friends are loaded.");
-            labelInfo.setTextFill(Color.GREEN);
+        if(!friendsLoaded) {
+            Platform.runLater(() -> {
+                labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled now.");
+                labelInfo.setTextFill(Color.RED);
+                textAreaMessage.setDisable(true);
+                listFriends.setDisable(true);
+                groupListNames.setDisable(true);
+                buttonSendMessage.setDisable(true);
+                buttonRemoveFromList.setDisable(true);
+                buttonMoveToList.setDisable(true);
+            });
+        } else {
+            Platform.runLater(() -> {
+                labelInfo.setText("Friends loaded. Extension is ready.");
+                labelInfo.setTextFill(Color.GREEN);
+            });
         }
     }
 
     @Override
     protected void initExtension() {
         RUNNING_INSTANCE = this;
-
-        onConnect((host, port, hotelVersion, clientIdentifier, clientType) -> {
-            if(!friendsLoaded) {
-                labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled now.");
-                labelInfo.setTextFill(Color.RED);
-            }else {
-                labelInfo.setText("Friends are loaded.");
-                labelInfo.setTextFill(Color.GREEN);
-            }
-        });
 
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", hMessage -> {
             idList.clear();
@@ -99,6 +102,10 @@ public class EventSender extends ExtensionForm {
 //            sendToClient(HFriend.constructUpdatePacket(allOffline, friendListUpdatePacketInfo.getHeaderId()));
 
             friendsLoaded = true;
+            Platform.runLater(() -> {
+                labelInfo.setText("Friends loaded. Extension is ready.");
+                labelInfo.setTextFill(Color.GREEN);
+            });
         });
 
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", hMessage -> {
@@ -135,7 +142,6 @@ public class EventSender extends ExtensionForm {
 
     }
     public void handleButtonSendMessage() {
-        if(!friendsLoaded) return;
         Platform.runLater(() -> {
             buttonSendMessage.setDisable(true);
             buttonSendMessage.setText("Sending...");
@@ -156,27 +162,29 @@ public class EventSender extends ExtensionForm {
         if(stop.get())
             return;
 
-        groupIdList.entrySet().stream()
-                .sorted(Map.Entry.comparingByValue())
-                .forEach(o -> {
-                    if(messages.length == 1) {
-                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), messages[0]));
-                        waitAFuckingSecond( 500);
-                    }else {
-                        Arrays.stream(messages).forEach(msg -> {
-                            sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), msg));
-                            waitAFuckingSecond(1000);
-                        });
-                    }
-                });
+        new Thread(() -> {
+            groupIdList.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .forEach(o -> {
+                        if(messages.length == 1) {
+                            sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), messages[0]));
+                            waitAFuckingSecond( 500);
+                        }else {
+                            Arrays.stream(messages).forEach(msg -> {
+                                sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), msg));
+                                waitAFuckingSecond(1000);
+                            });
+                        }
+                    });
 
-        Platform.runLater(() -> {
-            labelInfo.setText("Messages Sent! wait the cooldown.");
-            labelInfo.setTextFill(Color.GREEN);
-            buttonSendMessage.setText("Cooldown...");
-        });
+            Platform.runLater(() -> {
+                labelInfo.setText("Messages Sent! wait the cooldown.");
+                labelInfo.setTextFill(Color.GREEN);
+                buttonSendMessage.setText("Cooldown...");
+            });
+            timerCooldown.start();
+        }).start();
 
-        timerCooldown.start();
     }
     public void waitAFuckingSecond(int millisecondActually){
         try {
@@ -228,7 +236,6 @@ public class EventSender extends ExtensionForm {
         });
 
     }
-
     private void enableButtonSendMessage() {
         Platform.runLater(() -> {
             buttonSendMessage.setDisable(false);
