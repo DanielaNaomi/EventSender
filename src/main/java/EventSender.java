@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ExtensionInfo(
         Title = "Event Sender",
         Description = "Send custom message to selected friends!",
-        Version = "1.0",
+        Version = "1.1",
         Author = "Thauan"
 )
 
@@ -47,6 +47,10 @@ public class EventSender extends ExtensionForm {
     @Override
     protected void onShow() {
         timerCooldown.setRepeats(false);
+        if(friendsLoaded) {
+            labelInfo.setText("Friends are loaded.");
+            labelInfo.setTextFill(Color.GREEN);
+        }
     }
 
     @Override
@@ -57,6 +61,9 @@ public class EventSender extends ExtensionForm {
             if(!friendsLoaded) {
                 labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled now.");
                 labelInfo.setTextFill(Color.RED);
+            }else {
+                labelInfo.setText("Friends are loaded.");
+                labelInfo.setTextFill(Color.GREEN);
             }
         });
 
@@ -99,21 +106,23 @@ public class EventSender extends ExtensionForm {
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", hMessage -> {
             HPacket hPacket = hMessage.getPacket();
 
-            if(!friendsLoaded) {
+            if(friendsLoaded) {
                 for (HFriend user : HFriend.parseFromUpdate(hPacket)) {
                     int userId = user.getId();
                     String userName = user.getName();
 
                     if (user.isOnline()) {
-                        if (!idList.containsKey(userName) && !listFriends.getItems().contains(userName)) {
+                        if (!idList.containsKey(userName) && !groupIdList.containsKey(userName)) {
                             idList.put(user.getName(), userId);
                         }
                     } else {
                         if (idList.containsKey(userName) || groupIdList.containsKey(userName)) {
-                            idList.remove(userName);
-                            groupIdList.remove(userName);
-                            listFriends.getItems().remove(userName);
-                            groupListNames.getItems().remove(userName);
+                            Platform.runLater(() -> {
+                                idList.remove(userName);
+                                groupIdList.remove(userName);
+                                listFriends.getItems().remove(userName);
+                                groupListNames.getItems().remove(userName);
+                            });
                         }
                     }
                 }
@@ -181,13 +190,18 @@ public class EventSender extends ExtensionForm {
             groupIdList.remove(selectedName);
             groupListNames.getItems().remove(selectedName);
         }
-        Platform.runLater(() -> labelInfo.setText("Friend removed from Group Message List."));
-        Platform.runLater(() -> sendToServer(new HPacket("MessengerInit", HMessage.Direction.TOSERVER)));
+        Platform.runLater(() -> {
+            labelInfo.setText("Friend removed from Group Message List.");
+            labelInfo.setTextFill(Color.BLUE);
+        });
     }
 
     public void addToGroupList(ActionEvent actionEvent) {
         if(listFriends.getSelectionModel().isEmpty()) {
-            Platform.runLater(() -> labelInfo.setText("Select a player from your online friends."));
+            Platform.runLater(() -> {
+                labelInfo.setText("Select a player from your online friends.");
+                labelInfo.setTextFill(Color.BLUE);
+            });
             return;
         }
 
@@ -198,6 +212,12 @@ public class EventSender extends ExtensionForm {
             idList.remove(selectedName);
             listFriends.getItems().remove(selectedName);
         }
+
+        Platform.runLater(() -> {
+            labelInfo.setText("Friend added to Group Message List.");
+            labelInfo.setTextFill(Color.BLUE);
+        });
+
     }
 
     private void enableButtonSendMessage() {
