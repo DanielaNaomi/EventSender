@@ -1,5 +1,5 @@
 # EventSender
-EventSender is a extension to send a message, or multiple to friends!
+EventSender is a extension to send a message, or multiple messages, to friends!
 # Features
 - Send a custom message to everyone on the right side List
 - Allow multiple line messages, this means it will send a message separated by each line in the Text Box
