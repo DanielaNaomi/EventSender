@@ -1,5 +1,5 @@
 # EventSender
-EventSender is a extension to send a message, or multiple to friends!
+EventSender is a extension to send a message, or multiple messages, to friends!
 # Features
 - Send a custom message to everyone on the right side List
 - Allow multiple line messages, this means it will send a message separated by each line in the Text Box
@@ -7,7 +7,7 @@ EventSender is a extension to send a message, or multiple to friends!
 
 # Known Issues
 - Doesn't show the message in the messenger
-- You need to restart habbo so it works
+- You need to restart habbo with extension installed so it works properly
 
 # How to use
 1. Select each friend you want to send a message, click the "->" button to drag it over to group list
@@ -15,3 +15,4 @@ EventSender is a extension to send a message, or multiple to friends!
 3. Press Send Message!
 4. Wait for Cooldown, so you can send again.
 
+You can remove the friend by choosing it and clicking the "<-" button
