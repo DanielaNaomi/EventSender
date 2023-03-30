@@ -5,7 +5,6 @@ import gearth.protocol.HMessage;
 import gearth.protocol.HPacket;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.application.Platform;
 import javafx.scene.control.Button;
@@ -14,7 +13,6 @@ import javafx.scene.control.TextArea;
 import javafx.scene.paint.Color;
 
 import javax.swing.Timer;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ExtensionInfo(
         Title = "Event Sender",
         Description = "Send custom message to selected friends!",
-        Version = "1.1",
+        Version = "1.2",
         Author = "Thauan"
 )
 
@@ -138,8 +136,12 @@ public class EventSender extends ExtensionForm {
     }
     public void handleButtonSendMessage() {
         if(!friendsLoaded) return;
-        buttonSendMessage.setDisable(true);
-        buttonSendMessage.setText("Sending...");
+        Platform.runLater(() -> {
+            buttonSendMessage.setDisable(true);
+            buttonSendMessage.setText("Sending...");
+            labelInfo.setText("Your message is being send to everyone, please wait.");
+            labelInfo.setTextFill(Color.BLUE);
+        });
         String[] messages = textAreaMessage.getText().split("\n");
 
         AtomicInteger msgIndex = new AtomicInteger(1);
@@ -168,7 +170,11 @@ public class EventSender extends ExtensionForm {
                     }
                 });
 
-        Platform.runLater(() -> labelInfo.setText("Your message is being send to everyone, please wait cooldown."));
+        Platform.runLater(() -> {
+            labelInfo.setText("Messages Sent! wait the cooldown.");
+            labelInfo.setTextFill(Color.GREEN);
+            buttonSendMessage.setText("Cooldown...");
+        });
 
         timerCooldown.start();
     }
@@ -180,7 +186,10 @@ public class EventSender extends ExtensionForm {
 
     public void removeFromGroupList(ActionEvent actionEvent) {
         if(groupListNames.getSelectionModel().isEmpty()) {
-            Platform.runLater(() -> labelInfo.setText("You need to select at least one friend from Group Message List."));
+            Platform.runLater(() -> {
+                labelInfo.setText("You need to select at least one friend from Group Message List.");
+                labelInfo.setTextFill(Color.RED);
+            });
             return;
         }
         ObservableList<String> selectedList = groupListNames.getSelectionModel().getSelectedItems();
@@ -200,7 +209,7 @@ public class EventSender extends ExtensionForm {
         if(listFriends.getSelectionModel().isEmpty()) {
             Platform.runLater(() -> {
                 labelInfo.setText("Select a player from your online friends.");
-                labelInfo.setTextFill(Color.BLUE);
+                labelInfo.setTextFill(Color.RED);
             });
             return;
         }
@@ -221,7 +230,9 @@ public class EventSender extends ExtensionForm {
     }
 
     private void enableButtonSendMessage() {
-        buttonSendMessage.setDisable(false);
-        buttonSendMessage.setText("Send Message");
+        Platform.runLater(() -> {
+            buttonSendMessage.setDisable(false);
+            buttonSendMessage.setText("Send Message");
+        });
     }
 }
