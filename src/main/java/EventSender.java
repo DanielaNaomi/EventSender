@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ExtensionInfo(
         Title = "Event Sender",
         Description = "Send messages to selected friends!",
-        Version = "1.2",
+        Version = "1.3",
         Author = "Thauan"
 )
 
@@ -60,6 +60,12 @@ public class EventSender extends ExtensionForm {
             Platform.runLater(() -> {
                 labelInfo.setText("Friends loaded. Extension is ready.");
                 labelInfo.setTextFill(Color.GREEN);
+                textAreaMessage.setDisable(false);
+                listFriends.setDisable(false);
+                groupListNames.setDisable(false);
+                buttonSendMessage.setDisable(false);
+                buttonRemoveFromList.setDisable(false);
+                buttonMoveToList.setDisable(false);
             });
         }
     }
