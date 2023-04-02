@@ -34,9 +34,14 @@
       <Button fx:id="buttonSendMessage" layoutX="401.0" layoutY="81.0" mnemonicParsing="false" onAction="#handleButtonSendMessage" prefHeight="25.0" prefWidth="94.0" text="Send Message" />
       <TextArea fx:id="textAreaMessage" layoutX="212.0" layoutY="56.0" prefHeight="75.0" prefWidth="176.0" />
       <Label layoutX="212.0" layoutY="33.0" text="Message:" />
-      <Label layoutX="55.0" layoutY="123.0" text="Event Sender v1.3">
+      <Label layoutX="55.0" layoutY="123.0" text="Event Sender v1.4">
          <font>
             <Font name="System Bold" size="12.0" />
+         </font>
+      </Label>
+      <Label layoutX="212.0" layoutY="132.0" prefHeight="17.0" prefWidth="333.0" text="Info: You'll receive a fake message from the friend of what you've sent!">
+         <font>
+            <Font size="10.0" />
          </font>
       </Label>
    </children>
