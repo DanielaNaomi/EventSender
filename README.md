@@ -6,7 +6,7 @@ EventSender is a extension to send a message, or multiple messages, to friends!
 - Has a Cooldown so players don't abuse it.
 
 # Known Issues
-- Doesn't show the message in the messenger
+- You will receive a fake message from the friend in which you send the message, didn't understand how message works to make it show as you sent the message.
 - You need to restart habbo with extension installed so it works properly
 
 # How to use
