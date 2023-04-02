@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ExtensionInfo(
         Title = "Event Sender",
         Description = "Send messages to selected friends!",
-        Version = "1.3",
+        Version = "1.4",
         Author = "Thauan"
 )
 
@@ -178,12 +178,17 @@ public class EventSender extends ExtensionForm {
             groupIdList.entrySet().stream()
                     .sorted(Map.Entry.comparingByValue())
                     .forEach(o -> {
+                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), "--- EVENTSENDER ---", 0, ""));
+                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), "You've sent me the following Message(s):", 0, ""));
                         if(messages.length == 1) {
+//                            {in:NewConsole}{i:29533033}{s:"wqdqwdwqd"}{i:0}{s:""}
                             sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), messages[0]));
+                            sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), messages[0], 0, ""));
                             waitAFuckingSecond( 500);
                         }else {
                             Arrays.stream(messages).forEach(msg -> {
                                 sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), msg));
+                                sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), msg, 0, ""));
                                 waitAFuckingSecond(1000);
                             });
                         }

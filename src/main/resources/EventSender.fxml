@@ -39,10 +39,5 @@
             <Font name="System Bold" size="12.0" />
          </font>
       </Label>
-      <Label layoutX="212.0" layoutY="132.0" prefHeight="17.0" prefWidth="333.0" text="Warning: The messages don't appear in your messenger, but they are sent!">
-         <font>
-            <Font size="10.0" />
-         </font>
-      </Label>
    </children>
 </AnchorPane>
