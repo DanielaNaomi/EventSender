@@ -111,6 +111,12 @@ public class EventSender extends ExtensionForm {
             Platform.runLater(() -> {
                 labelInfo.setText("Friends loaded. Extension is ready.");
                 labelInfo.setTextFill(Color.GREEN);
+                textAreaMessage.setDisable(false);
+                listFriends.setDisable(false);
+                groupListNames.setDisable(false);
+                buttonSendMessage.setDisable(false);
+                buttonRemoveFromList.setDisable(false);
+                buttonMoveToList.setDisable(false);
             });
         });
 
