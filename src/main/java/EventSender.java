@@ -39,7 +39,7 @@ public class EventSender extends ExtensionForm {
     protected void initExtension() {
         RUNNING_INSTANCE = this;
 
-        intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFiendListFragment);
+        intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
     }
 
@@ -145,7 +145,7 @@ public class EventSender extends ExtensionForm {
         sendFriendsListView.getItems().remove(friend);
     }
 
-    protected void onFiendListFragment(HMessage hMessage) {
+    protected void onFriendListFragment(HMessage hMessage) {
         HPacket hPacket = hMessage.getPacket();
 
         for (HFriend user : HFriend.parseFromFragment(hPacket)) {
@@ -154,6 +154,7 @@ public class EventSender extends ExtensionForm {
             }
         }
 
+        initialFriendsLoaded = true;
         setGuiState(GuiState.READY);
     }
 
@@ -204,9 +205,9 @@ public class EventSender extends ExtensionForm {
 
     }
 
-    public void waitAnActualFuckingMinute(int millisecondActually) {
+    public void waitAnActualFuckingMinute(int jkItsMilliseconds) {
         try {
-            Thread.sleep(millisecondActually);
+            Thread.sleep(jkItsMilliseconds);
         } catch (InterruptedException ignored) {
         }
     }
