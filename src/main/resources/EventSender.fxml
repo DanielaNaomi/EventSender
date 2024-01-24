@@ -16,23 +16,23 @@
             <Image url="@icon.png" />
          </image>
       </ImageView>
-      <ListView fx:id="listFriends" layoutX="45.0" layoutY="180.0" prefHeight="176.0" prefWidth="176.0" />
+      <ListView fx:id="onlineFriendsListView" layoutX="45.0" layoutY="180.0" prefHeight="176.0" prefWidth="176.0" />
       <Label layoutX="45.0" layoutY="155.0" text="Friends Online:" />
-      <ListView fx:id="groupListNames" layoutX="367.0" layoutY="184.0" prefHeight="176.0" prefWidth="176.0" />
+      <ListView fx:id="sendFriendsListView" layoutX="367.0" layoutY="184.0" prefHeight="176.0" prefWidth="176.0" />
       <Label layoutX="367.0" layoutY="155.0" text="Send Message to:" />
-      <Button fx:id="buttonMoveToList" layoutX="259.0" layoutY="223.0" mnemonicParsing="false" onAction="#addToGroupList" prefHeight="25.0" prefWidth="62.0" text="-&gt;" />
-      <Label fx:id="labelInfo" alignment="CENTER" layoutY="379.0" prefHeight="17.0" prefWidth="583.0" textAlignment="CENTER">
+      <Button fx:id="addToSendListButton" layoutX="259.0" layoutY="223.0" mnemonicParsing="false" onAction="#addToGroupList" prefHeight="25.0" prefWidth="62.0" text="-&gt;" />
+      <Label fx:id="statusLabel" alignment="CENTER" layoutY="379.0" prefHeight="17.0" prefWidth="583.0" textAlignment="CENTER">
          <font>
             <Font name="Arial Black" size="12.0" />
          </font></Label>
-      <Button fx:id="buttonRemoveFromList" layoutX="259.0" layoutY="297.0" mnemonicParsing="false" onAction="#removeFromGroupList" prefHeight="25.0" prefWidth="62.0" text="&lt;-" />
+      <Button fx:id="removeFromSendListButton" layoutX="259.0" layoutY="297.0" mnemonicParsing="false" onAction="#removeFromGroupList" prefHeight="25.0" prefWidth="62.0" text="&lt;-" />
       <Label alignment="CENTER" layoutY="388.0" prefHeight="17.0" prefWidth="583.0" textAlignment="CENTER">
          <font>
             <Font name="Arial Black" size="12.0" />
          </font>
       </Label>
-      <Button fx:id="buttonSendMessage" layoutX="401.0" layoutY="81.0" mnemonicParsing="false" onAction="#handleButtonSendMessage" prefHeight="25.0" prefWidth="94.0" text="Send Message" />
-      <TextArea fx:id="textAreaMessage" layoutX="212.0" layoutY="56.0" prefHeight="75.0" prefWidth="176.0" />
+      <Button fx:id="sendMessageButton" layoutX="401.0" layoutY="81.0" mnemonicParsing="false" onAction="#handleButtonSendMessage" prefHeight="25.0" prefWidth="94.0" text="Send Message" />
+      <TextArea fx:id="messageTextArea" layoutX="212.0" layoutY="56.0" prefHeight="75.0" prefWidth="176.0" />
       <Label layoutX="212.0" layoutY="33.0" text="Message:" />
       <Label layoutX="55.0" layoutY="123.0" text="Event Sender v1.4">
          <font>
