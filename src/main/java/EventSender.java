@@ -22,7 +22,6 @@ public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
 
     protected List<Friend> onlineFriendsList = new ArrayList<>();
-    protected boolean initialFriendsLoaded = false;
 
     // UI elements
     public ListView<Friend> onlineFriendsListView;
@@ -39,6 +38,7 @@ public class EventSender extends ExtensionForm {
     protected void initExtension() {
         RUNNING_INSTANCE = this;
 
+        timerCooldown.setRepeats(false);
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
     }
@@ -47,7 +47,6 @@ public class EventSender extends ExtensionForm {
     protected void onStartConnection() {
         System.out.println("Refreshing friends list, new habbo connection is made!");
         setGuiState(GuiState.INITIALIZING);
-        initialFriendsLoaded = false;
         onlineFriendsList.clear();
     }
 
@@ -55,18 +54,7 @@ public class EventSender extends ExtensionForm {
     protected void onEndConnection() {
         System.out.println("Refreshing friends list, habbo disconnected");
         setGuiState(GuiState.INITIALIZING);
-        initialFriendsLoaded = false;
         onlineFriendsList.clear();
-    }
-
-    @Override
-    protected void onShow() {
-        timerCooldown.setRepeats(false);
-        if (initialFriendsLoaded) {
-            setGuiState(GuiState.READY);
-        } else {
-            setGuiState(GuiState.INITIALIZING);
-        }
     }
 
     protected void setGuiState(GuiState guiState) {
@@ -154,7 +142,6 @@ public class EventSender extends ExtensionForm {
             }
         }
 
-        initialFriendsLoaded = true;
         setGuiState(GuiState.READY);
     }
 
