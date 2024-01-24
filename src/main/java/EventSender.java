@@ -191,7 +191,7 @@ public class EventSender extends ExtensionForm {
                 if (onlineFriendsList.contains(friend)) {
                     // for each message in messages
                     Arrays.stream(messages).forEach(message -> {
-//                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
+                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
                         waitAnActualFuckingMinute(500);
                     });
                 }
