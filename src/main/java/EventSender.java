@@ -58,8 +58,10 @@ public class EventSender extends ExtensionForm {
     protected void clearFriends() {
         setGuiState(GuiState.INITIALIZING);
         onlineFriendsList.clear();
-        onlineFriendsListView.getItems().clear();
-        sendFriendsListView.getItems().clear();
+        Platform.runLater(() -> {
+            onlineFriendsListView.getItems().clear();
+            sendFriendsListView.getItems().clear();
+        });
     }
 
     protected void setGuiState(GuiState guiState) {
@@ -119,9 +121,11 @@ public class EventSender extends ExtensionForm {
 
         Friend friend = new Friend(hFriend.getId(), hFriend.getName());
         onlineFriendsList.add(friend);
-        onlineFriendsListView.getItems().add(friend);
+        Platform.runLater(() -> {
+            onlineFriendsListView.getItems().add(friend);
+        });
     }
-    
+
     protected Friend getFriendById(int id) {
         return onlineFriendsList.stream().filter(friend -> friend.getId() == id).findFirst().orElse(null);
     }
@@ -132,10 +136,12 @@ public class EventSender extends ExtensionForm {
         if (friend == null) {
             return;
         }
-        
+
         onlineFriendsList.remove(friend);
-        onlineFriendsListView.getItems().remove(friend);
-        sendFriendsListView.getItems().remove(friend);
+        Platform.runLater(() -> {
+            onlineFriendsListView.getItems().remove(friend);
+            sendFriendsListView.getItems().remove(friend);
+        });
     }
 
     protected void onFriendListFragment(HMessage hMessage) {
@@ -173,7 +179,7 @@ public class EventSender extends ExtensionForm {
                 break;
             }
         }
-        if(tooLongMessageIndex != -1) {
+        if (tooLongMessageIndex != -1) {
             setGuiState(GuiState.READY);
             setStatusLabel("The message on line " + (tooLongMessageIndex + 1) + " is too long! (max 128 characters)", Color.RED);
             return;
@@ -182,10 +188,10 @@ public class EventSender extends ExtensionForm {
         new Thread(() -> {
             sendFriendsListView.getItems().forEach(friend -> {
                 // Friend still online?
-                if(onlineFriendsList.contains(friend)) {
+                if (onlineFriendsList.contains(friend)) {
                     // for each message in messages
                     Arrays.stream(messages).forEach(message -> {
-                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
+//                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
                         waitAnActualFuckingMinute(500);
                     });
                 }
@@ -209,9 +215,12 @@ public class EventSender extends ExtensionForm {
             return;
         }
 
-        for(Friend friend : sendFriendsListView.getSelectionModel().getSelectedItems()) {
-            onlineFriendsListView.getItems().add(friend);
-            sendFriendsListView.getItems().remove(friend);
+        for (Friend friend : sendFriendsListView.getSelectionModel().getSelectedItems()) {
+
+            Platform.runLater(() -> {
+                onlineFriendsListView.getItems().add(friend);
+                sendFriendsListView.getItems().remove(friend);
+            });
         }
     }
 
@@ -220,9 +229,11 @@ public class EventSender extends ExtensionForm {
             return;
         }
 
-        for(Friend friend : onlineFriendsListView.getSelectionModel().getSelectedItems()) {
-            onlineFriendsListView.getItems().remove(friend);
-            sendFriendsListView.getItems().add(friend);
+        for (Friend friend : onlineFriendsListView.getSelectionModel().getSelectedItems()) {
+            Platform.runLater(() -> {
+                onlineFriendsListView.getItems().remove(friend);
+                sendFriendsListView.getItems().add(friend);
+            });
         }
     }
 }
