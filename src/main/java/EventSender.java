@@ -46,15 +46,20 @@ public class EventSender extends ExtensionForm {
     @Override
     protected void onStartConnection() {
         System.out.println("Refreshing friends list, new habbo connection is made!");
-        setGuiState(GuiState.INITIALIZING);
-        onlineFriendsList.clear();
+        clearFriends();
     }
 
     @Override
     protected void onEndConnection() {
         System.out.println("Refreshing friends list, habbo disconnected");
+        clearFriends();
+    }
+
+    protected void clearFriends() {
         setGuiState(GuiState.INITIALIZING);
         onlineFriendsList.clear();
+        onlineFriendsListView.getItems().clear();
+        sendFriendsListView.getItems().clear();
     }
 
     protected void setGuiState(GuiState guiState) {
