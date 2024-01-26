@@ -4,19 +4,16 @@ import gearth.extensions.parsers.HFriend;
 import gearth.protocol.HMessage;
 import gearth.protocol.HPacket;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 
 import javax.swing.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "1.4", Author = "Thauan")
+@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "1.5", Author = "Thauan")
 
 public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
@@ -29,8 +26,12 @@ public class EventSender extends ExtensionForm {
     public Label statusLabel;
     public Button removeFromSendListButton;
     public Button sendMessageButton;
-    public TextArea messageTextArea;
     public Button addToSendListButton;
+    public Button addAllToSendListButton;
+    public Button removeAllFromSendListButton;
+    public TextArea messageTextArea;
+    public ProgressBar sendingProgressBar;
+    public Label sendingProgressBarLabel;
 
     Timer timerCooldown = new Timer(40000, e -> setGuiState(GuiState.READY));
 
@@ -75,23 +76,43 @@ public class EventSender extends ExtensionForm {
                     sendMessageButton.setDisable(true);
                     removeFromSendListButton.setDisable(true);
                     addToSendListButton.setDisable(true);
+                    addAllToSendListButton.setDisable(true);
+                    removeAllFromSendListButton.setDisable(true);
                     break;
-                case READY:
-                case SENDING:
                 case COOLDOWN:
+                case SENDING:
+                case READY:
                     messageTextArea.setDisable(false);
                     onlineFriendsListView.setDisable(false);
                     sendFriendsListView.setDisable(false);
                     sendMessageButton.setDisable(false);
                     removeFromSendListButton.setDisable(false);
                     addToSendListButton.setDisable(false);
+                    addAllToSendListButton.setDisable(false);
+                    removeAllFromSendListButton.setDisable(false);
+                    break;
+            }
+
+            // Progressbar
+            switch (guiState) {
+                case COOLDOWN:
+                case READY:
+                case INITIALIZING:
+                    sendingProgressBar.setVisible(false);
+                    sendingProgressBar.setProgress(0.0);
+                    sendingProgressBarLabel.setVisible(false);
+                    sendingProgressBarLabel.setText("0 / 0");
+                    break;
+                case SENDING:
+                    sendingProgressBar.setVisible(true);
+                    sendingProgressBarLabel.setVisible(true);
                     break;
             }
 
             // Setting the text
             switch (guiState) {
                 case INITIALIZING:
-                    setStatusLabel("(Re)start Habbo to load your friend list.", Color.RED);
+                    setStatusLabel("Click \"Reload Friend List\" to load your friend list.", Color.RED);
                     break;
                 case READY:
                     setStatusLabel("Ready to send!", Color.GREEN);
@@ -168,7 +189,12 @@ public class EventSender extends ExtensionForm {
         }
     }
 
-    public void handleButtonSendMessage() {
+    public void onReloadFriendListButtonClick() {
+        clearFriends();
+        sendToServer(new HPacket("MessengerInit", HMessage.Direction.TOSERVER));
+    }
+
+    public void onSendMessageButtonClick() {
         setGuiState(GuiState.SENDING);
         String[] messages = messageTextArea.getText().split("\n");
 
@@ -186,14 +212,29 @@ public class EventSender extends ExtensionForm {
         }
 
         new Thread(() -> {
+            final int totalMessages = messages.length * sendFriendsListView.getItems().size();
+            AtomicInteger messagesSent = new AtomicInteger();
+            messagesSent.set(0);
+            Platform.runLater(() -> {
+                sendingProgressBar.setProgress(0.0);
+                sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
+            });
+
             sendFriendsListView.getItems().forEach(friend -> {
                 // Friend still online?
                 if (onlineFriendsList.contains(friend)) {
                     // for each message in messages
                     Arrays.stream(messages).forEach(message -> {
                         sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
+                        messagesSent.addAndGet(1);
+                        Platform.runLater(() -> {
+                            sendingProgressBar.setProgress((double) messagesSent.get() / totalMessages);
+                            sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
+                        });
                         waitAnActualFuckingMinute(500);
                     });
+                } else {
+                    messagesSent.addAndGet(messages.length);
                 }
             });
 
@@ -210,13 +251,26 @@ public class EventSender extends ExtensionForm {
         }
     }
 
-    public void removeFromGroupList(ActionEvent actionEvent) {
-        if (sendFriendsListView.getSelectionModel().isEmpty()) {
-            return;
+    public void onAddToSendListButtonClick() {
+        for (Friend friend : onlineFriendsListView.getSelectionModel().getSelectedItems()) {
+            Platform.runLater(() -> {
+                onlineFriendsListView.getItems().remove(friend);
+                sendFriendsListView.getItems().add(friend);
+            });
         }
+    }
 
+    public void onAddAllToSendListButtonClick() {
+        for (Friend friend : onlineFriendsListView.getItems()) {
+            Platform.runLater(() -> {
+                onlineFriendsListView.getItems().remove(friend);
+                sendFriendsListView.getItems().add(friend);
+            });
+        }
+    }
+
+    public void onRemoveFromSendListButtonClick() {
         for (Friend friend : sendFriendsListView.getSelectionModel().getSelectedItems()) {
-
             Platform.runLater(() -> {
                 onlineFriendsListView.getItems().add(friend);
                 sendFriendsListView.getItems().remove(friend);
@@ -224,15 +278,11 @@ public class EventSender extends ExtensionForm {
         }
     }
 
-    public void addToGroupList(ActionEvent actionEvent) {
-        if (onlineFriendsListView.getSelectionModel().isEmpty()) {
-            return;
-        }
-
-        for (Friend friend : onlineFriendsListView.getSelectionModel().getSelectedItems()) {
+    public void onRemoveAllFromSendListButtonClick() {
+        for (Friend friend : sendFriendsListView.getItems()) {
             Platform.runLater(() -> {
-                onlineFriendsListView.getItems().remove(friend);
-                sendFriendsListView.getItems().add(friend);
+                onlineFriendsListView.getItems().add(friend);
+                sendFriendsListView.getItems().remove(friend);
             });
         }
     }
