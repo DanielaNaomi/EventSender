@@ -142,9 +142,7 @@ public class EventSender extends ExtensionForm {
 
         Friend friend = new Friend(hFriend.getId(), hFriend.getName());
         onlineFriendsList.add(friend);
-        Platform.runLater(() -> {
-            onlineFriendsListView.getItems().add(friend);
-        });
+        Platform.runLater(() -> onlineFriendsListView.getItems().add(friend));
     }
 
     protected Friend getFriendById(int id) {
