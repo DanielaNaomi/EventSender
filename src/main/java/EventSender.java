@@ -42,6 +42,7 @@ public class EventSender extends ExtensionForm {
         timerCooldown.setRepeats(false);
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
+        clearFriends();
     }
 
     @Override
