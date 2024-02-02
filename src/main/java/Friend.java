@@ -1,10 +1,12 @@
 public class Friend {
     private final String name;
     private final int id;
+    private final String figure;
 
-    public Friend(int id, String name) {
+    public Friend(int id, String name, String figure) {
         this.id = id;
         this.name = name;
+        this.figure = figure;
     }
 
     public String getName() {
@@ -13,6 +15,10 @@ public class Friend {
 
     public int getId() {
         return id;
+    }
+
+    public String getFigure() {
+        return figure;
     }
 
     @Override

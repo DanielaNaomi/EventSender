@@ -13,11 +13,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "1.5", Author = "Thauan")
+@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "2.0", Author = "Thauan & Roboroads")
 
 public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
-
+    public Label versionLabel;
     protected List<Friend> onlineFriendsList = new ArrayList<>();
     protected boolean ignoreFriendListFragment = false;
 
@@ -33,7 +33,8 @@ public class EventSender extends ExtensionForm {
     public TextArea messageTextArea;
     public ProgressBar sendingProgressBar;
     public Label sendingProgressBarLabel;
-
+    public String habboName = "";
+    public int habboId = -1;
 
     Timer timerCooldown = new Timer(40000, e -> setGuiState(GuiState.READY));
     Timer timerResetIgnoreFriendListFragment = new Timer(5000, e -> ignoreFriendListFragment = false);
@@ -47,11 +48,14 @@ public class EventSender extends ExtensionForm {
 
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
+        intercept(HMessage.Direction.TOCLIENT, "MessengerInit", this::onMessengerInit);
+        intercept(HMessage.Direction.TOCLIENT, "UserObject", this::onUserObject);
         clearFriends();
     }
 
     @Override
     protected void onStartConnection() {
+        versionLabel.setText("Event Sender v" + EventSender.class.getAnnotation(ExtensionInfo.class).Version());
         System.out.println("Refreshing friends list, new habbo connection is made!");
         clearFriends();
     }
@@ -61,7 +65,6 @@ public class EventSender extends ExtensionForm {
         System.out.println("Refreshing friends list, habbo disconnected");
         clearFriends();
     }
-
     protected void clearFriends() {
         setGuiState(GuiState.INITIALIZING);
         onlineFriendsList.clear();
@@ -87,6 +90,8 @@ public class EventSender extends ExtensionForm {
                     break;
                 case COOLDOWN:
                 case SENDING:
+                    sendMessageButton.setDisable(true);
+                    break;
                 case READY:
                     messageTextArea.setDisable(false);
                     onlineFriendsListView.setDisable(false);
@@ -146,7 +151,7 @@ public class EventSender extends ExtensionForm {
             return;
         }
 
-        Friend friend = new Friend(hFriend.getId(), hFriend.getName());
+        Friend friend = new Friend(hFriend.getId(), hFriend.getName(), hFriend.getFigure());
         onlineFriendsList.add(friend);
         Platform.runLater(() -> onlineFriendsListView.getItems().add(friend));
     }
@@ -182,6 +187,17 @@ public class EventSender extends ExtensionForm {
         }
 
         setGuiState(GuiState.READY);
+    }
+
+    protected void onMessengerInit(HMessage hMessage) {
+        if(ignoreFriendListFragment) {
+            hMessage.setBlocked(true);
+        }
+    }
+
+    private void onUserObject(HMessage hMessage) {
+        habboId = hMessage.getPacket().readInteger();
+        habboName = hMessage.getPacket().readString();
     }
 
     protected void onFriendListUpdate(HMessage hMessage) {
@@ -233,8 +249,12 @@ public class EventSender extends ExtensionForm {
                 // Friend still online?
                 if (onlineFriendsList.contains(friend)) {
                     // for each message in messages
+                    sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), " ", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-26.sh-305-110.lg-280-1408.ch-262-110"));
+                    sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), "--- EVENTSENDER ---", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-26.sh-305-110.lg-280-1408.ch-262-110"));
+                    sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), "You've sent this user the following Message(s):", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-29.ch-3135-95.lg-3136-95"));
                     Arrays.stream(messages).forEach(message -> {
                         sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
+                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), message, 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-29.ch-3135-95.lg-3136-95"));
                         messagesSent.addAndGet(1);
                         Platform.runLater(() -> {
                             sendingProgressBar.setProgress((double) messagesSent.get() / totalMessages);
@@ -295,4 +315,18 @@ public class EventSender extends ExtensionForm {
             });
         }
     }
+
+    private static String generateRandomString() {
+        int length = 24;
+        String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        StringBuilder randomString = new StringBuilder();
+
+        for (int i = 0; i < length; i++) {
+            int index = (int) (Math.random() * characters.length());
+            randomString.append(characters.charAt(index));
+        }
+
+        return randomString.toString();
+    }
+
 }
