@@ -33,8 +33,6 @@ public class EventSender extends ExtensionForm {
     public TextArea messageTextArea;
     public ProgressBar sendingProgressBar;
     public Label sendingProgressBarLabel;
-    public String habboName = "";
-    public int habboId = -1;
 
     Timer timerCooldown = new Timer(40000, e -> setGuiState(GuiState.READY));
     Timer timerResetIgnoreFriendListFragment = new Timer(5000, e -> ignoreFriendListFragment = false);
@@ -49,7 +47,6 @@ public class EventSender extends ExtensionForm {
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
         intercept(HMessage.Direction.TOCLIENT, "MessengerInit", this::onMessengerInit);
-        intercept(HMessage.Direction.TOCLIENT, "UserObject", this::onUserObject);
         clearFriends();
     }
 
@@ -193,11 +190,6 @@ public class EventSender extends ExtensionForm {
         if(ignoreFriendListFragment) {
             hMessage.setBlocked(true);
         }
-    }
-
-    private void onUserObject(HMessage hMessage) {
-        habboId = hMessage.getPacket().readInteger();
-        habboName = hMessage.getPacket().readString();
     }
 
     protected void onFriendListUpdate(HMessage hMessage) {
