@@ -1,262 +1,298 @@
 import gearth.extensions.ExtensionForm;
 import gearth.extensions.ExtensionInfo;
-import gearth.extensions.parsers.*;
+import gearth.extensions.parsers.HFriend;
 import gearth.protocol.HMessage;
 import gearth.protocol.HPacket;
-import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.scene.control.*;
 import javafx.application.Platform;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 
-import javax.swing.Timer;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import javax.swing.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ExtensionInfo(
-        Title = "Event Sender",
-        Description = "Send messages to selected friends!",
-        Version = "1.4",
-        Author = "Thauan"
-)
+@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "1.5", Author = "Thauan")
 
 public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
-    public ListView<String> listFriends;
-    public boolean friendsLoaded = false;
-    public TreeMap<String, Integer> idList = new TreeMap<>();
-    public TreeMap<String, Integer> groupIdList = new TreeMap<>();
-    public Button buttonMoveToList;
-    public ListView<String> groupListNames;
-    public Label labelInfo;
-    public Button buttonRemoveFromList;
-    public Button buttonSendMessage;
-    public TextArea textAreaMessage;
-    Timer timerCooldown = new Timer(40000, e -> enableButtonSendMessage());
-    @Override
-    protected void onStartConnection() {
-        System.out.println("Event Sender Started it's connection!");
-    }
 
-    @Override
-    protected void onShow() {
-        timerCooldown.setRepeats(false);
-        if(!friendsLoaded) {
-            Platform.runLater(() -> {
-                labelInfo.setText("Please restart Habbo so the extension fully works. The extension will be disabled now.");
-                labelInfo.setTextFill(Color.RED);
-                textAreaMessage.setDisable(true);
-                listFriends.setDisable(true);
-                groupListNames.setDisable(true);
-                buttonSendMessage.setDisable(true);
-                buttonRemoveFromList.setDisable(true);
-                buttonMoveToList.setDisable(true);
-            });
-        } else {
-            Platform.runLater(() -> {
-                labelInfo.setText("Friends loaded. Extension is ready.");
-                labelInfo.setTextFill(Color.GREEN);
-                textAreaMessage.setDisable(false);
-                listFriends.setDisable(false);
-                groupListNames.setDisable(false);
-                buttonSendMessage.setDisable(false);
-                buttonRemoveFromList.setDisable(false);
-                buttonMoveToList.setDisable(false);
-            });
-        }
-    }
+    protected List<Friend> onlineFriendsList = new ArrayList<>();
+    protected boolean ignoreFriendListFragment = false;
+
+    // UI elements
+    public ListView<Friend> onlineFriendsListView;
+    public ListView<Friend> sendFriendsListView;
+    public Label statusLabel;
+    public Button removeFromSendListButton;
+    public Button sendMessageButton;
+    public Button addToSendListButton;
+    public Button addAllToSendListButton;
+    public Button removeAllFromSendListButton;
+    public TextArea messageTextArea;
+    public ProgressBar sendingProgressBar;
+    public Label sendingProgressBarLabel;
+
+
+    Timer timerCooldown = new Timer(40000, e -> setGuiState(GuiState.READY));
+    Timer timerResetIgnoreFriendListFragment = new Timer(5000, e -> ignoreFriendListFragment = false);
 
     @Override
     protected void initExtension() {
         RUNNING_INSTANCE = this;
 
-        intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", hMessage -> {
-            idList.clear();
-            if(listFriends.getItems().size() > 1)
-                listFriends.getItems().clear();
-            HPacket hPacket = hMessage.getPacket();
+        timerCooldown.setRepeats(false);
+        timerResetIgnoreFriendListFragment.setRepeats(false);
 
-            if(!friendsLoaded) {
-                for (HFriend user : HFriend.parseFromFragment(hPacket)) {
-                    int userId = user.getId();
-                    String userName = user.getName();
-                    if (user.isOnline()) {
-                        if (!idList.containsKey(userName) && !listFriends.getItems().contains(userName)) {
-                            idList.put(user.getName(), userId);
-                        }
-
-                        sendToClient(new HPacket("FriendListUpdate", HMessage.Direction.TOCLIENT, 0, 1, 0, user.getId(), user.getName(), 1, 0, 0, 0, "", true, false, true, ""));
-                    }
-                }
-                for (Map.Entry<String, Integer> idUsername : idList.entrySet()) {
-                    if (!listFriends.getItems().contains(idUsername.getKey()) && !groupListNames.getItems().contains(idUsername.getKey())) {
-                        Platform.runLater(() -> listFriends.getItems().add(idUsername.getKey()));
-                    }
-                }
-            }
-
-//            HFriend[] friends = HFriend.parseFromFragment(hPacket); // Thanks to WiredSpast
-//            HFriend[] allOffline = Arrays.stream(friends)
-//                    .peek(f -> f.setOnline(false))
-//                    .toArray(HFriend[]::new);
-//            PacketInfo friendListUpdatePacketInfo = getPacketInfoManager().getPacketInfoFromName(HMessage.Direction.TOCLIENT, "");
-//            if (friendListUpdatePacketInfo == null) return;
-//            sendToClient(HFriend.constructUpdatePacket(allOffline, friendListUpdatePacketInfo.getHeaderId()));
-
-            friendsLoaded = true;
-            Platform.runLater(() -> {
-                labelInfo.setText("Friends loaded. Extension is ready.");
-                labelInfo.setTextFill(Color.GREEN);
-                textAreaMessage.setDisable(false);
-                listFriends.setDisable(false);
-                groupListNames.setDisable(false);
-                buttonSendMessage.setDisable(false);
-                buttonRemoveFromList.setDisable(false);
-                buttonMoveToList.setDisable(false);
-            });
-        });
-
-        intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", hMessage -> {
-            HPacket hPacket = hMessage.getPacket();
-
-            if(friendsLoaded) {
-                for (HFriend user : HFriend.parseFromUpdate(hPacket)) {
-                    int userId = user.getId();
-                    String userName = user.getName();
-
-                    if (user.isOnline()) {
-                        if (!idList.containsKey(userName) && !groupIdList.containsKey(userName)) {
-                            idList.put(user.getName(), userId);
-                        }
-                    } else {
-                        if (idList.containsKey(userName) || groupIdList.containsKey(userName)) {
-                            Platform.runLater(() -> {
-                                idList.remove(userName);
-                                groupIdList.remove(userName);
-                                listFriends.getItems().remove(userName);
-                                groupListNames.getItems().remove(userName);
-                            });
-                        }
-                    }
-                }
-                for (Map.Entry<String, Integer> idUsername : idList.entrySet()) {
-                    if (!listFriends.getItems().contains(idUsername.getKey()) && !groupListNames.getItems().contains(idUsername.getKey())) {
-                        Platform.runLater(() -> listFriends.getItems().add(idUsername.getKey()));
-                    }
-                }
-            }
-
-        });
-
+        intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
+        intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
+        clearFriends();
     }
-    public void handleButtonSendMessage() {
-        Platform.runLater(() -> {
-            buttonSendMessage.setDisable(true);
-            buttonSendMessage.setText("Sending...");
-            labelInfo.setText("Your message is being send to everyone, please wait.");
-            labelInfo.setTextFill(Color.BLUE);
-        });
-        String[] messages = textAreaMessage.getText().split("\n");
 
-        AtomicInteger msgIndex = new AtomicInteger(1);
-        AtomicBoolean stop = new AtomicBoolean(false);
-        Arrays.stream(messages).forEach(msg -> {
-            if(msg.chars().count() > 128) {
-                Platform.runLater(() -> labelInfo.setText("The line " + msgIndex + " of the message is to big, the maximum chars allowed are 128."));
-                stop.set(true);
-            }
-            msgIndex.getAndIncrement();
+    @Override
+    protected void onStartConnection() {
+        System.out.println("Refreshing friends list, new habbo connection is made!");
+        clearFriends();
+    }
+
+    @Override
+    protected void onEndConnection() {
+        System.out.println("Refreshing friends list, habbo disconnected");
+        clearFriends();
+    }
+
+    protected void clearFriends() {
+        setGuiState(GuiState.INITIALIZING);
+        onlineFriendsList.clear();
+        Platform.runLater(() -> {
+            onlineFriendsListView.getItems().clear();
+            sendFriendsListView.getItems().clear();
         });
-        if(stop.get())
+    }
+
+    protected void setGuiState(GuiState guiState) {
+        Platform.runLater(() -> {
+            // Disabling of UI elements
+            switch (guiState) {
+                case INITIALIZING:
+                    messageTextArea.setDisable(true);
+                    onlineFriendsListView.setDisable(true);
+                    sendFriendsListView.setDisable(true);
+                    sendMessageButton.setDisable(true);
+                    removeFromSendListButton.setDisable(true);
+                    addToSendListButton.setDisable(true);
+                    addAllToSendListButton.setDisable(true);
+                    removeAllFromSendListButton.setDisable(true);
+                    break;
+                case COOLDOWN:
+                case SENDING:
+                case READY:
+                    messageTextArea.setDisable(false);
+                    onlineFriendsListView.setDisable(false);
+                    sendFriendsListView.setDisable(false);
+                    sendMessageButton.setDisable(false);
+                    removeFromSendListButton.setDisable(false);
+                    addToSendListButton.setDisable(false);
+                    addAllToSendListButton.setDisable(false);
+                    removeAllFromSendListButton.setDisable(false);
+                    break;
+            }
+
+            // Progressbar
+            switch (guiState) {
+                case COOLDOWN:
+                case READY:
+                case INITIALIZING:
+                    sendingProgressBar.setVisible(false);
+                    sendingProgressBar.setProgress(0.0);
+                    sendingProgressBarLabel.setVisible(false);
+                    sendingProgressBarLabel.setText("0 / 0");
+                    break;
+                case SENDING:
+                    sendingProgressBar.setVisible(true);
+                    sendingProgressBarLabel.setVisible(true);
+                    break;
+            }
+
+            // Setting the text
+            switch (guiState) {
+                case INITIALIZING:
+                    setStatusLabel("Click \"Reload Friend List\" to load your friend list.", Color.RED);
+                    break;
+                case READY:
+                    setStatusLabel("Ready to send!", Color.GREEN);
+                    break;
+                case SENDING:
+                    setStatusLabel("Sending your message, please wait..", Color.BLUE);
+                    break;
+                case COOLDOWN:
+                    setStatusLabel("Messages sent! Cooldown period active, please wait before spamming your friends again..", Color.ORANGE);
+                    break;
+            }
+        });
+    }
+
+    protected void setStatusLabel(String text, Color color) {
+        Platform.runLater(() -> {
+            statusLabel.setText(text);
+            statusLabel.setTextFill(color);
+        });
+    }
+
+    protected void addOnlineFriend(HFriend hFriend) {
+        // Friend exists?
+        if (onlineFriendsList.stream().anyMatch(friend -> friend.getId() == hFriend.getId())) {
             return;
+        }
+
+        Friend friend = new Friend(hFriend.getId(), hFriend.getName());
+        onlineFriendsList.add(friend);
+        Platform.runLater(() -> onlineFriendsListView.getItems().add(friend));
+    }
+
+    protected Friend getFriendById(int id) {
+        return onlineFriendsList.stream().filter(friend -> friend.getId() == id).findFirst().orElse(null);
+    }
+
+    protected void removeOnlineFriend(HFriend hFriend) {
+        // Friend exists?
+        Friend friend = getFriendById(hFriend.getId());
+        if (friend == null) {
+            return;
+        }
+
+        onlineFriendsList.remove(friend);
+        Platform.runLater(() -> {
+            onlineFriendsListView.getItems().remove(friend);
+            sendFriendsListView.getItems().remove(friend);
+        });
+    }
+
+    protected void onFriendListFragment(HMessage hMessage) {
+        if(ignoreFriendListFragment) {
+            hMessage.setBlocked(true);
+        }
+
+        HPacket hPacket = hMessage.getPacket();
+        for (HFriend user : HFriend.parseFromFragment(hPacket)) {
+            if (user.isOnline()) {
+                addOnlineFriend(user);
+            }
+        }
+
+        setGuiState(GuiState.READY);
+    }
+
+    protected void onFriendListUpdate(HMessage hMessage) {
+        HPacket hPacket = hMessage.getPacket();
+
+        for (HFriend hFriend : HFriend.parseFromUpdate(hPacket)) {
+            if (hFriend.isOnline()) {
+                addOnlineFriend(hFriend);
+            } else {
+                removeOnlineFriend(hFriend);
+            }
+        }
+    }
+
+    public void onReloadFriendListButtonClick() {
+        clearFriends();
+        ignoreFriendListFragment = true;
+        sendToServer(new HPacket("MessengerInit", HMessage.Direction.TOSERVER));
+        timerResetIgnoreFriendListFragment.start();
+    }
+
+    public void onSendMessageButtonClick() {
+        setGuiState(GuiState.SENDING);
+        String[] messages = messageTextArea.getText().split("\n");
+
+        int tooLongMessageIndex = -1;
+        for (int i = 0; i < messages.length; i++) {
+            if (messages[i].length() > 128) {
+                tooLongMessageIndex = i;
+                break;
+            }
+        }
+        if (tooLongMessageIndex != -1) {
+            setGuiState(GuiState.READY);
+            setStatusLabel("The message on line " + (tooLongMessageIndex + 1) + " is too long! (max 128 characters)", Color.RED);
+            return;
+        }
 
         new Thread(() -> {
-            groupIdList.entrySet().stream()
-                    .sorted(Map.Entry.comparingByValue())
-                    .forEach(o -> {
-                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), "--- EVENTSENDER ---", 0, ""));
-                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), "You've sent me the following Message(s):", 0, ""));
-                        if(messages.length == 1) {
-//                            {in:NewConsole}{i:29533033}{s:"wqdqwdwqd"}{i:0}{s:""}
-                            sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), messages[0]));
-                            sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), messages[0], 0, ""));
-                            waitAFuckingSecond( 500);
-                        }else {
-                            Arrays.stream(messages).forEach(msg -> {
-                                sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, o.getValue(), msg));
-                                sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, o.getValue(), msg, 0, ""));
-                                waitAFuckingSecond(1000);
-                            });
-                        }
-                    });
-
+            final int totalMessages = messages.length * sendFriendsListView.getItems().size();
+            AtomicInteger messagesSent = new AtomicInteger();
+            messagesSent.set(0);
             Platform.runLater(() -> {
-                labelInfo.setText("Messages were Sent! Wait the cooldown.");
-                labelInfo.setTextFill(Color.GREEN);
-                buttonSendMessage.setText("Cooldown...");
+                sendingProgressBar.setProgress(0.0);
+                sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
             });
+
+            sendFriendsListView.getItems().forEach(friend -> {
+                // Friend still online?
+                if (onlineFriendsList.contains(friend)) {
+                    // for each message in messages
+                    Arrays.stream(messages).forEach(message -> {
+                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
+                        messagesSent.addAndGet(1);
+                        Platform.runLater(() -> {
+                            sendingProgressBar.setProgress((double) messagesSent.get() / totalMessages);
+                            sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
+                        });
+                        waitAnActualFuckingMinute(500);
+                    });
+                } else {
+                    messagesSent.addAndGet(messages.length);
+                }
+            });
+
+            setGuiState(GuiState.COOLDOWN);
             timerCooldown.start();
         }).start();
 
     }
-    public void waitAFuckingSecond(int millisecondActually){
+
+    public void waitAnActualFuckingMinute(int jkItsMilliseconds) {
         try {
-            Thread.sleep(millisecondActually);
-        } catch (InterruptedException ignored) { }
+            Thread.sleep(jkItsMilliseconds);
+        } catch (InterruptedException ignored) {
+        }
     }
 
-    public void removeFromGroupList(ActionEvent actionEvent) {
-        if(groupListNames.getSelectionModel().isEmpty()) {
+    public void onAddToSendListButtonClick() {
+        for (Friend friend : onlineFriendsListView.getSelectionModel().getSelectedItems()) {
             Platform.runLater(() -> {
-                labelInfo.setText("You need to select at least one friend from Group Message List.");
-                labelInfo.setTextFill(Color.RED);
+                onlineFriendsListView.getItems().remove(friend);
+                sendFriendsListView.getItems().add(friend);
             });
-            return;
         }
-        ObservableList<String> selectedList = groupListNames.getSelectionModel().getSelectedItems();
-        for (String selectedName : selectedList) {
-            listFriends.getItems().add(selectedName);
-            idList.put(selectedName, groupIdList.get(selectedName));
-            groupIdList.remove(selectedName);
-            groupListNames.getItems().remove(selectedName);
-        }
-        Platform.runLater(() -> {
-            labelInfo.setText("Friend removed from Group Message List.");
-            labelInfo.setTextFill(Color.BLUE);
-        });
     }
 
-    public void addToGroupList(ActionEvent actionEvent) {
-        if(listFriends.getSelectionModel().isEmpty()) {
+    public void onAddAllToSendListButtonClick() {
+        for (Friend friend : onlineFriendsListView.getItems()) {
             Platform.runLater(() -> {
-                labelInfo.setText("Select a player from your online friends.");
-                labelInfo.setTextFill(Color.RED);
+                onlineFriendsListView.getItems().remove(friend);
+                sendFriendsListView.getItems().add(friend);
             });
-            return;
         }
-
-        ObservableList<String> selectedList = listFriends.getSelectionModel().getSelectedItems();
-        for (String selectedName : selectedList) {
-            groupListNames.getItems().add(selectedName);
-            groupIdList.put(selectedName, idList.get(selectedName));
-            idList.remove(selectedName);
-            listFriends.getItems().remove(selectedName);
-        }
-
-        Platform.runLater(() -> {
-            labelInfo.setText("Friend added to Group Message List.");
-            labelInfo.setTextFill(Color.BLUE);
-        });
-
     }
-    private void enableButtonSendMessage() {
-        Platform.runLater(() -> {
-            buttonSendMessage.setDisable(false);
-            buttonSendMessage.setText("Send Message");
-        });
+
+    public void onRemoveFromSendListButtonClick() {
+        for (Friend friend : sendFriendsListView.getSelectionModel().getSelectedItems()) {
+            Platform.runLater(() -> {
+                onlineFriendsListView.getItems().add(friend);
+                sendFriendsListView.getItems().remove(friend);
+            });
+        }
+    }
+
+    public void onRemoveAllFromSendListButtonClick() {
+        for (Friend friend : sendFriendsListView.getItems()) {
+            Platform.runLater(() -> {
+                onlineFriendsListView.getItems().add(friend);
+                sendFriendsListView.getItems().remove(friend);
+            });
+        }
     }
 }
