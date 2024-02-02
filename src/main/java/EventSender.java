@@ -19,6 +19,7 @@ public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
 
     protected List<Friend> onlineFriendsList = new ArrayList<>();
+    protected boolean ignoreFriendListFragment = false;
 
     // UI elements
     public ListView<Friend> onlineFriendsListView;
@@ -33,13 +34,17 @@ public class EventSender extends ExtensionForm {
     public ProgressBar sendingProgressBar;
     public Label sendingProgressBarLabel;
 
+
     Timer timerCooldown = new Timer(40000, e -> setGuiState(GuiState.READY));
+    Timer timerResetIgnoreFriendListFragment = new Timer(5000, e -> ignoreFriendListFragment = false);
 
     @Override
     protected void initExtension() {
         RUNNING_INSTANCE = this;
 
         timerCooldown.setRepeats(false);
+        timerResetIgnoreFriendListFragment.setRepeats(false);
+
         intercept(HMessage.Direction.TOCLIENT, "FriendListFragment", this::onFriendListFragment);
         intercept(HMessage.Direction.TOCLIENT, "FriendListUpdate", this::onFriendListUpdate);
         clearFriends();
@@ -165,8 +170,11 @@ public class EventSender extends ExtensionForm {
     }
 
     protected void onFriendListFragment(HMessage hMessage) {
-        HPacket hPacket = hMessage.getPacket();
+        if(ignoreFriendListFragment) {
+            hMessage.setBlocked(true);
+        }
 
+        HPacket hPacket = hMessage.getPacket();
         for (HFriend user : HFriend.parseFromFragment(hPacket)) {
             if (user.isOnline()) {
                 addOnlineFriend(user);
@@ -190,7 +198,9 @@ public class EventSender extends ExtensionForm {
 
     public void onReloadFriendListButtonClick() {
         clearFriends();
+        ignoreFriendListFragment = true;
         sendToServer(new HPacket("MessengerInit", HMessage.Direction.TOSERVER));
+        timerResetIgnoreFriendListFragment.start();
     }
 
     public void onSendMessageButtonClick() {
