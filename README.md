@@ -1,7 +1,7 @@
 # EventSender
 EventSender is a extension to send a message, or multiple messages, to friends!
 
-[![Event Sender](https://i.imgur.com/KumLPby.png)
+![Event Sender](https://i.imgur.com/KumLPby.png)
 
 
 # Features
