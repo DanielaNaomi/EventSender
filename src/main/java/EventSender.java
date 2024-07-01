@@ -13,8 +13,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "2.0", Author = "Thauan & Roboroads")
-
+@ExtensionInfo(Title = "Event Sender", Description = "Send messages to selected friends!", Version = "2.1", Author = "Thauan & Roboroads")
 public class EventSender extends ExtensionForm {
     public static EventSender RUNNING_INSTANCE;
     public Label versionLabel;
@@ -33,6 +32,7 @@ public class EventSender extends ExtensionForm {
     public TextArea messageTextArea;
     public ProgressBar sendingProgressBar;
     public Label sendingProgressBarLabel;
+    public CheckBox inviteroom;
 
     Timer timerCooldown = new Timer(40000, e -> setGuiState(GuiState.READY));
     Timer timerResetIgnoreFriendListFragment = new Timer(5000, e -> ignoreFriendListFragment = false);
@@ -62,6 +62,7 @@ public class EventSender extends ExtensionForm {
         System.out.println("Refreshing friends list, habbo disconnected");
         clearFriends();
     }
+
     protected void clearFriends() {
         setGuiState(GuiState.INITIALIZING);
         onlineFriendsList.clear();
@@ -237,32 +238,50 @@ public class EventSender extends ExtensionForm {
                 sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
             });
 
+            List<Integer> userIds = new ArrayList<>();
             sendFriendsListView.getItems().forEach(friend -> {
-                // Friend still online?
                 if (onlineFriendsList.contains(friend)) {
-                    // for each message in messages
-                    sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), " ", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-26.sh-305-110.lg-280-1408.ch-262-110"));
-                    sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), "--- EVENTSENDER ---", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-26.sh-305-110.lg-280-1408.ch-262-110"));
-                    sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), "You've sent this user the following Message(s):", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-29.ch-3135-95.lg-3136-95"));
-                    Arrays.stream(messages).forEach(message -> {
-                        sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
-                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), message, 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-29.ch-3135-95.lg-3136-95"));
-                        messagesSent.addAndGet(1);
-                        Platform.runLater(() -> {
-                            sendingProgressBar.setProgress((double) messagesSent.get() / totalMessages);
-                            sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
-                        });
-                        waitAnActualFuckingMinute(500);
-                    });
+                    userIds.add(friend.getId());
                 } else {
                     messagesSent.addAndGet(messages.length);
                 }
             });
 
+            if (inviteroom.isSelected() && !userIds.isEmpty()) {
+                HPacket sendRoomInvitePacket = new HPacket("SendRoomInvite", HMessage.Direction.TOSERVER, userIds.size());
+                userIds.forEach(sendRoomInvitePacket::appendInt);
+                sendRoomInvitePacket.appendString(String.join("\n", messages));
+                sendToServer(sendRoomInvitePacket);
+                messagesSent.addAndGet(messages.length);
+                Platform.runLater(() -> {
+                    sendingProgressBar.setProgress(1.0);
+                    sendingProgressBarLabel.setText(totalMessages + " / " + totalMessages);
+                });
+            } else {
+                sendFriendsListView.getItems().forEach(friend -> {
+                    if (onlineFriendsList.contains(friend)) {
+                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), " ", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-26.sh-305-110.lg-280-1408.ch-262-110"));
+                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), "--- EVENTSENDER ---", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-26.sh-305-110.lg-280-1408.ch-262-110"));
+                        sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), "You've sent this user the following Message(s):", 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-29.ch-3135-95.lg-3136-95"));
+                        Arrays.stream(messages).forEach(message -> {
+                            sendToServer(new HPacket("SendMsg", HMessage.Direction.TOSERVER, friend.getId(), message));
+                            sendToClient(new HPacket("NewConsole", HMessage.Direction.TOCLIENT, friend.getId(), message, 604800, generateRandomString(), 0, friend.getId(), "EventSender", "hd-3704-29.ch-3135-95.lg-3136-95"));
+                            messagesSent.addAndGet(1);
+                            Platform.runLater(() -> {
+                                sendingProgressBar.setProgress((double) messagesSent.get() / totalMessages);
+                                sendingProgressBarLabel.setText(messagesSent + " / " + totalMessages);
+                            });
+                            waitAnActualFuckingMinute(500);
+                        });
+                    } else {
+                        messagesSent.addAndGet(messages.length);
+                    }
+                });
+            }
+
             setGuiState(GuiState.COOLDOWN);
             timerCooldown.start();
         }).start();
-
     }
 
     public void waitAnActualFuckingMinute(int jkItsMilliseconds) {
@@ -320,5 +339,4 @@ public class EventSender extends ExtensionForm {
 
         return randomString.toString();
     }
-
 }
